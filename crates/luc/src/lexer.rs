@@ -1,3 +1,19 @@
+use std::fmt;
+
+pub enum LexError {
+    UnexpectedCharacter(char),
+    UnterminatedString,
+}
+
+impl fmt::Display for LexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LexError::UnexpectedCharacter(c) => write!(f, "Unexpected character: '{}'", c),
+            LexError::UnterminatedString => write!(f, "Unterminated string literal"),
+        }
+    }
+}
+
 enum TokenKind {
     LeftParen,
     RightParen,
@@ -19,9 +35,10 @@ enum TokenKind {
     Greater,
     GreaterEqual,
     Number,
+    String,
     Identifier,
     Print,
-    Unknown,
+    // Unknown,
 }
 
 pub struct Token {
@@ -56,9 +73,10 @@ impl Token {
             TokenKind::Greater => "Greater",
             TokenKind::GreaterEqual => "GreaterEqual",
             TokenKind::Number => "Number",
+            TokenKind::String => "String",
             TokenKind::Identifier => "Identifier",
             TokenKind::Print => "Print",
-            TokenKind::Unknown => "Unknown",
+            // TokenKind::Unknown => "Unknown",
         }
     }
 
@@ -67,7 +85,7 @@ impl Token {
     }
 }
 
-pub fn scan_tokens(source: &str) -> Vec<Token> {
+pub fn scan_tokens(source: &str) -> Result<Vec<Token>, LexError> {
     let mut tokens = Vec::new();
     let mut chars = source.chars().peekable();
     while let Some(character) = chars.next() {
@@ -114,6 +132,24 @@ pub fn scan_tokens(source: &str) -> Vec<Token> {
                 } else {
                     Some(Token::new(TokenKind::Greater, character.to_string()))
                 }
+            }
+            '"' => {
+                let mut lexeme = character.to_string();
+                let mut terminated = false;
+
+                while let Some(next_character) = chars.next() {
+                    lexeme.push(next_character);
+                    if next_character == '"' {
+                        terminated = true;
+                        break;
+                    }
+                }
+
+                if !terminated {
+                    return Err(LexError::UnterminatedString);
+                }
+
+                Some(Token::new(TokenKind::String, lexeme))
             }
             character if character.is_ascii_digit() => {
                 let mut lexeme = character.to_string();
@@ -174,7 +210,7 @@ pub fn scan_tokens(source: &str) -> Vec<Token> {
                 Some(Token::new(kind, lexeme))
             }
             character if character.is_whitespace() => None,
-            character => Some(Token::new(TokenKind::Unknown, character.to_string())),
+            character => return Err(LexError::UnexpectedCharacter(character)),
         };
 
         if let Some(token) = token {
@@ -182,5 +218,5 @@ pub fn scan_tokens(source: &str) -> Vec<Token> {
         }
     }
 
-    tokens
+    Ok(tokens)
 }
