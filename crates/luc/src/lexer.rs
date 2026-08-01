@@ -1,5 +1,4 @@
-pub enum TokenKind {
-    // Delimiters
+enum TokenKind {
     LeftParen,
     RightParen,
     LeftBrace,
@@ -7,8 +6,6 @@ pub enum TokenKind {
     Comma,
     Dot,
     Semicolon,
-    Unknown(char),
-    // Operators
     Plus,
     Minus,
     Star,
@@ -21,90 +18,125 @@ pub enum TokenKind {
     LessEqual,
     Greater,
     GreaterEqual,
-    // Literals
+    Identifier,
+    Print,
+    Unknown,
 }
 
-impl TokenKind {
-    pub fn name(&self) -> &str {
-        match self {
-            TokenKind::LeftParen => "LEFTPAREN",
-            TokenKind::RightParen => "RIGHTPAREN",
-            TokenKind::LeftBrace => "LEFTBRACE",
-            TokenKind::RightBrace => "RIGHTBRACE",
-            TokenKind::Comma => "COMMA",
-            TokenKind::Dot => "DOT",
-            TokenKind::Semicolon => "SEMICOLON",
-            TokenKind::Unknown(_) => "UNKNOWN",
-            TokenKind::Plus => "PLUS",
-            TokenKind::Minus => "MINUS",
-            TokenKind::Star => "STAR",
-            TokenKind::Slash => "SLASH",
-            TokenKind::Equal => "EQUAL",
-            TokenKind::EqualEqual => "EQUALEQUAL",
-            TokenKind::Bang => "BANG",
-            TokenKind::BangEqual => "BANGEQUAL",
-            TokenKind::Less => "LESS",
-            TokenKind::LessEqual => "LESSEQUAL",
-            TokenKind::Greater => "GREATER",
-            TokenKind::GreaterEqual => "GREATEREQUAL",
+pub struct Token {
+    kind: TokenKind,
+    lexeme: String,
+}
+
+impl Token {
+    fn new(kind: TokenKind, lexeme: String) -> Self {
+        Token { kind, lexeme }
+    }
+
+    pub fn kind_name(&self) -> &str {
+        match &self.kind {
+            TokenKind::LeftParen => "LeftParen",
+            TokenKind::RightParen => "RightParen",
+            TokenKind::LeftBrace => "LeftBrace",
+            TokenKind::RightBrace => "RightBrace",
+            TokenKind::Comma => "Comma",
+            TokenKind::Dot => "Dot",
+            TokenKind::Semicolon => "Semicolon",
+            TokenKind::Plus => "Plus",
+            TokenKind::Minus => "Minus",
+            TokenKind::Star => "Star",
+            TokenKind::Slash => "Slash",
+            TokenKind::Equal => "Equal",
+            TokenKind::EqualEqual => "EqualEqual",
+            TokenKind::Bang => "Bang",
+            TokenKind::BangEqual => "BangEqual",
+            TokenKind::Less => "Less",
+            TokenKind::LessEqual => "LessEqual",
+            TokenKind::Greater => "Greater",
+            TokenKind::GreaterEqual => "GreaterEqual",
+            TokenKind::Identifier => "Identifier",
+            TokenKind::Print => "Print",
+            TokenKind::Unknown => "Unknown",
         }
+    }
+
+    pub fn lexeme(&self) -> &str {
+        self.lexeme.as_str()
     }
 }
 
-pub fn scan_tokens(source: &str) -> Vec<TokenKind> {
+pub fn scan_tokens(source: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
-    let mut characters = source.chars().peekable();
-
-    while let Some(c) = characters.next() {
-        let token_kind = match c {
-            '(' => Some(TokenKind::LeftParen),
-            ')' => Some(TokenKind::RightParen),
-            '{' => Some(TokenKind::LeftBrace),
-            '}' => Some(TokenKind::RightBrace),
-            ',' => Some(TokenKind::Comma),
-            '.' => Some(TokenKind::Dot),
-            ';' => Some(TokenKind::Semicolon),
-            '+' => Some(TokenKind::Plus),
-            '-' => Some(TokenKind::Minus),
-            '*' => Some(TokenKind::Star),
-            '/' => Some(TokenKind::Slash),
+    let mut chars = source.chars().peekable();
+    while let Some(character) = chars.next() {
+        let token = match character {
+            '(' => Some(Token::new(TokenKind::LeftParen, character.to_string())),
+            ')' => Some(Token::new(TokenKind::RightParen, character.to_string())),
+            '{' => Some(Token::new(TokenKind::LeftBrace, character.to_string())),
+            '}' => Some(Token::new(TokenKind::RightBrace, character.to_string())),
+            ',' => Some(Token::new(TokenKind::Comma, character.to_string())),
+            '.' => Some(Token::new(TokenKind::Dot, character.to_string())),
+            ';' => Some(Token::new(TokenKind::Semicolon, character.to_string())),
+            '+' => Some(Token::new(TokenKind::Plus, character.to_string())),
+            '-' => Some(Token::new(TokenKind::Minus, character.to_string())),
+            '*' => Some(Token::new(TokenKind::Star, character.to_string())),
+            '/' => Some(Token::new(TokenKind::Slash, character.to_string())),
             '=' => {
-                if characters.peek() == Some(&'=') {
-                    characters.next();
-                    Some(TokenKind::EqualEqual)
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    Some(Token::new(TokenKind::EqualEqual, String::from("==")))
                 } else {
-                    Some(TokenKind::Equal)
+                    Some(Token::new(TokenKind::Equal, character.to_string()))
                 }
             }
             '!' => {
-                if characters.peek() == Some(&'=') {
-                    characters.next();
-                    Some(TokenKind::BangEqual)
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    Some(Token::new(TokenKind::BangEqual, String::from("!=")))
                 } else {
-                    Some(TokenKind::Bang)
+                    Some(Token::new(TokenKind::Bang, character.to_string()))
                 }
             }
             '<' => {
-                if characters.peek() == Some(&'=') {
-                    characters.next();
-                    Some(TokenKind::LessEqual)
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    Some(Token::new(TokenKind::LessEqual, String::from("<=")))
                 } else {
-                    Some(TokenKind::Less)
+                    Some(Token::new(TokenKind::Less, character.to_string()))
                 }
             }
             '>' => {
-                if characters.peek() == Some(&'=') {
-                    characters.next();
-                    Some(TokenKind::GreaterEqual)
+                if chars.peek() == Some(&'=') {
+                    chars.next();
+                    Some(Token::new(TokenKind::GreaterEqual, String::from(">=")))
                 } else {
-                    Some(TokenKind::Greater)
+                    Some(Token::new(TokenKind::Greater, character.to_string()))
                 }
             }
+            character if character.is_ascii_alphabetic() || character == '_' => {
+                let mut lexeme = character.to_string();
+
+                while let Some(next_character) = chars.peek() {
+                    if next_character.is_ascii_alphanumeric() || *next_character == '_' {
+                        lexeme.push(*next_character);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+
+                let kind = match lexeme.as_str() {
+                    "print" => TokenKind::Print,
+                    _ => TokenKind::Identifier,
+                };
+
+                Some(Token::new(kind, lexeme))
+            }
             character if character.is_whitespace() => None,
-            character => Some(TokenKind::Unknown(character)),
+            character => Some(Token::new(TokenKind::Unknown, character.to_string())),
         };
 
-        if let Some(token) = token_kind {
+        if let Some(token) = token {
             tokens.push(token);
         }
     }

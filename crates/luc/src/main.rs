@@ -28,7 +28,7 @@ fn run(source_path: &str) -> Result<(), io::Error> {
     let tokens = lexer::scan_tokens(&source);
 
     for token in tokens {
-        println!("{}", token.name());
+        println!("{} {}", token.kind_name(), token.lexeme());
     }
 
     Ok(())
