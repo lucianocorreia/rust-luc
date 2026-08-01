@@ -18,6 +18,7 @@ enum TokenKind {
     LessEqual,
     Greater,
     GreaterEqual,
+    Number,
     Identifier,
     Print,
     Unknown,
@@ -54,6 +55,7 @@ impl Token {
             TokenKind::LessEqual => "LessEqual",
             TokenKind::Greater => "Greater",
             TokenKind::GreaterEqual => "GreaterEqual",
+            TokenKind::Number => "Number",
             TokenKind::Identifier => "Identifier",
             TokenKind::Print => "Print",
             TokenKind::Unknown => "Unknown",
@@ -112,6 +114,45 @@ pub fn scan_tokens(source: &str) -> Vec<Token> {
                 } else {
                     Some(Token::new(TokenKind::Greater, character.to_string()))
                 }
+            }
+            character if character.is_ascii_digit() => {
+                let mut lexeme = character.to_string();
+
+                while let Some(next_character) = chars.peek() {
+                    if next_character.is_ascii_digit() {
+                        lexeme.push(*next_character);
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+
+                let has_fraction = if chars.peek() == Some(&'.') {
+                    let mut lookahead = chars.clone();
+                    lookahead.next();
+                    match lookahead.peek() {
+                        Some(next_character) => next_character.is_ascii_digit(),
+                        None => false,
+                    }
+                } else {
+                    false
+                };
+
+                if has_fraction {
+                    chars.next();
+                    lexeme.push('.');
+
+                    while let Some(next_character) = chars.peek() {
+                        if next_character.is_ascii_digit() {
+                            lexeme.push(*next_character);
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                Some(Token::new(TokenKind::Number, lexeme))
             }
             character if character.is_ascii_alphabetic() || character == '_' => {
                 let mut lexeme = character.to_string();
