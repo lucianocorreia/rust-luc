@@ -3,12 +3,12 @@
 ## Implementação oficial
 
 - [x] Capítulo 1 — Primeiro programa.
-- [ ] Capítulo 2 — Argumentos e ownership.
-- [ ] Capítulo 3 — Ausência com `Option`.
-- [ ] Capítulo 4 — Códigos de saída.
-- [ ] Capítulo 5 — Leitura, `Result` e borrowing.
-- [ ] Capítulo 6 — `run` e propagação de erros.
-- [ ] Capítulo 7 — Lexer de delimitadores.
+- [x] Capítulo 2 — Argumentos e ownership.
+- [x] Capítulo 3 — Ausência com `Option`.
+- [x] Capítulo 4 — Códigos de saída.
+- [x] Capítulo 5 — Leitura, `Result` e borrowing.
+- [x] Capítulo 6 — `run` e propagação de erros.
+- [x] Capítulo 7 — Lexer de delimitadores.
 - [ ] Capítulo 8 — Operadores com lookahead.
 - [ ] Capítulo 9 — Identificadores e palavras-chave.
 - [ ] Capítulo 10 — Literais numéricos.

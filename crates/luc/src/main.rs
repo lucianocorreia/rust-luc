@@ -42,7 +42,13 @@ fn run(source_path: &str) -> Result<(), RunError> {
     let tokens = lexer::scan_tokens(&source).map_err(RunError::Lex)?;
 
     for token in tokens {
-        println!("{} {}", token.kind_name(), token.lexeme());
+        println!(
+            "{}:{} {} {}",
+            token.line(),
+            token.column(),
+            token.kind_name(),
+            token.lexeme()
+        );
     }
 
     Ok(())
