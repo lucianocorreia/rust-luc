@@ -10,7 +10,21 @@ O curso deverá ter aproximadamente 150 a 200 capítulos, mas não terá uma lis
 4. Parser e AST mínimos.
 5. Interpretador da primeira expressão Luc.
 
-Somente o próximo horizonte será detalhado quando o anterior produzir limitações concretas.
+Os guias 1 a 16 cobrem esse horizonte até a execução de `imprima` com strings. O estado implementado pelo estudante continua registrado separadamente em [Progresso](progress.md).
+
+## Horizonte de expressões
+
+1. Expressões literais e representação de valores.
+2. Precedência de operadores e agrupamento.
+3. Operadores unários e binários.
+4. Erros de runtime.
+5. `imprima` recebendo expressões.
+
+Os guias 17 a 21 cobrem esse horizonte até expressões aritméticas completas. Ele só estará concluído no software depois que o estudante implementar os capítulos e validar seus exercícios.
+
+## Próximo horizonte
+
+Ainda não será detalhado. Depois da implementação do Capítulo 21, as limitações observadas decidirão entre bindings de variáveis, comparação e booleanos ou melhorias de infraestrutura como spans completos e saída em streaming.
 
 ## Ecossistema pretendido
 

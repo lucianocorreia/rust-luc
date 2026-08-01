@@ -1,5 +1,13 @@
 # Glossário
 
+## AST
+
+Árvore sintática abstrata que preserva a estrutura significativa do programa sem carregar toda a forma textual. Surge no Capítulo 14.
+
+## `Box<T>`
+
+Ponteiro proprietário que armazena um valor no heap. Surge no Capítulo 19 para dar tamanho finito a expressões recursivas.
+
 ## Borrowing
 
 Acesso temporário a um valor sem transferência de ownership. O Capítulo 5 introduz o empréstimo compartilhado `&source_path`.
@@ -11,6 +19,10 @@ Unidade de compilação Rust. `src/main.rs` define atualmente o crate binário `
 ## `ExitCode`
 
 Tipo da biblioteca padrão que representa o status devolvido por um processo ao sistema operacional.
+
+## `EOF`
+
+Token sentinela que representa o fim do arquivo e carrega a posição imediatamente após o último caractere. Surge no Capítulo 18.
 
 ## Movimento
 

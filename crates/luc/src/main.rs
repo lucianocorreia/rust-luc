@@ -1,5 +1,7 @@
 use std::{env, fs, io, process::ExitCode};
 
+mod lexer;
+
 fn main() -> ExitCode {
     let mut arguments = env::args();
     let _program_name = arguments.next();
@@ -23,6 +25,11 @@ fn main() -> ExitCode {
 
 fn run(source_path: &str) -> Result<(), io::Error> {
     let source = fs::read_to_string(source_path)?;
-    println!("{source}");
+    let tokens = lexer::scan_tokens(&source);
+
+    for token in tokens {
+        println!("{}", token.name());
+    }
+
     Ok(())
 }

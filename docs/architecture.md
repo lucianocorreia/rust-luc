@@ -11,7 +11,7 @@ Cargo Workspace virtual
         └── main
 ```
 
-O binário apenas imprime `Luc`. Os capítulos 2 a 11 são guias ainda não implementados pelo estudante.
+O binário apenas imprime `Luc`. Os capítulos 2 a 21 são guias ainda não implementados pelo estudante.
 
 ## Decisões atuais
 
@@ -38,6 +38,20 @@ A mudança ainda permanece dentro do crate porque uma função resolve a pressã
 O Capítulo 7 propõe `lexer.rs` quando a análise léxica se torna uma responsabilidade concreta. Ele permanece no package `luc`: existe separação de código, mas ainda não existe segundo consumidor que justifique uma fronteira de crate.
 
 Os capítulos 8 a 11 evoluem esse mesmo módulo com operadores, identificadores, números, strings e erros léxicos. Nenhuma dessas etapas cria package adicional.
+
+Os capítulos 12 e 13 acrescentam posições, comentários e testes ao lexer sem mudar essa fronteira.
+
+## AST, parser e interpretador planejados
+
+O Capítulo 14 propõe os módulos `ast.rs` e `parser.rs` quando tokens passam a ter significado sintático. O Capítulo 15 introduz `Program` e múltiplas instruções delimitadas por ponto e vírgula.
+
+O Capítulo 16 propõe `interpreter.rs` para executar a AST. Os três módulos permanecem no package `luc`: apesar das responsabilidades distintas, ainda existe um único consumidor e nenhuma necessidade de compilação independente.
+
+## Expressões planejadas
+
+O Capítulo 17 introduz `Value` e `Expr` dentro de `ast.rs`. O Capítulo 18 encapsula o cursor em um tipo privado `Parser` e adiciona `EOF` ao fluxo de tokens sem alterar a API pública.
+
+Os capítulos 19 a 21 tornam a AST recursiva com `Box`, acrescentam operadores unários e binários e tornam o interpretador falível. Essas mudanças aprofundam as responsabilidades existentes, mas não criam um segundo consumidor nem justificam novos crates.
 
 ## Registro de decisões
 
