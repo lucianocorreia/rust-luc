@@ -1,7 +1,5 @@
 use std::{env, fmt, fs, io, process::ExitCode};
 
-use crate::RunError::Parse;
-
 mod ast;
 mod lexer;
 mod parser;
@@ -46,11 +44,15 @@ fn main() -> ExitCode {
 fn run(source_path: &str) -> Result<(), RunError> {
     let source = fs::read_to_string(source_path).map_err(RunError::Io)?;
     let tokens = lexer::scan_tokens(&source).map_err(RunError::Lex)?;
-    let statement = parser::parse(tokens).map_err(Parse)?;
+    let program = parser::parse(tokens).map_err(RunError::Parse)?;
 
-    match statement {
-        ast::Statement::Print(value) => {
-            println!("PRINT_STATEMENT '{value}'");
+    println!("PROGRAM");
+
+    for statement in program.into_statements() {
+        match statement {
+            ast::Statement::Print(value) => {
+                println!("  PRINT_STATEMENT '{value}'");
+            }
         }
     }
 
