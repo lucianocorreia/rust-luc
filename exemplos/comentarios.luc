@@ -1,0 +1,4 @@
+// primeiro programa Luc
+imprima "Olá, Luc!" // comentário depois do código
+/ // a barra anterior continua sendo divisão
+imprima "fim"

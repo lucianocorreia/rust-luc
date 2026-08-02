@@ -94,29 +94,29 @@ impl Token {
 
     pub fn kind_name(&self) -> &str {
         match &self.kind {
-            TokenKind::LeftParen => "LeftParen",
-            TokenKind::RightParen => "RightParen",
-            TokenKind::LeftBrace => "LeftBrace",
-            TokenKind::RightBrace => "RightBrace",
-            TokenKind::Comma => "Comma",
-            TokenKind::Dot => "Dot",
-            TokenKind::Semicolon => "Semicolon",
-            TokenKind::Plus => "Plus",
-            TokenKind::Minus => "Minus",
-            TokenKind::Star => "Star",
-            TokenKind::Slash => "Slash",
-            TokenKind::Equal => "Equal",
-            TokenKind::EqualEqual => "EqualEqual",
-            TokenKind::Bang => "Bang",
-            TokenKind::BangEqual => "BangEqual",
-            TokenKind::Less => "Less",
-            TokenKind::LessEqual => "LessEqual",
-            TokenKind::Greater => "Greater",
-            TokenKind::GreaterEqual => "GreaterEqual",
-            TokenKind::Number => "Number",
-            TokenKind::String => "String",
-            TokenKind::Identifier => "Identifier",
-            TokenKind::Print => "Print",
+            TokenKind::LeftParen => "LEFTPAREN",
+            TokenKind::RightParen => "RIGHTPAREN",
+            TokenKind::LeftBrace => "LEFTBRACE",
+            TokenKind::RightBrace => "RIGHTBRACE",
+            TokenKind::Comma => "COMMA",
+            TokenKind::Dot => "DOT",
+            TokenKind::Semicolon => "SEMICOLON",
+            TokenKind::Plus => "PLUS",
+            TokenKind::Minus => "MINUS",
+            TokenKind::Star => "STAR",
+            TokenKind::Slash => "SLASH",
+            TokenKind::Equal => "EQUAL",
+            TokenKind::EqualEqual => "EQUALEQUAL",
+            TokenKind::Bang => "BANG",
+            TokenKind::BangEqual => "BANGEQUAL",
+            TokenKind::Less => "LESS",
+            TokenKind::LessEqual => "LESSEQUAL",
+            TokenKind::Greater => "GREATER",
+            TokenKind::GreaterEqual => "GREATEREQUAL",
+            TokenKind::Number => "NUMBER",
+            TokenKind::String => "STRING",
+            TokenKind::Identifier => "IDENTIFIER",
+            TokenKind::Print => "PRINT",
             // TokenKind::Unknown => "Unknown",
         }
     }
@@ -190,11 +190,30 @@ pub fn scan_tokens(source: &str) -> Result<Vec<Token>, LexError> {
                 position,
             )),
             '*' => Some(Token::new(TokenKind::Star, character.to_string(), position)),
-            '/' => Some(Token::new(
-                TokenKind::Slash,
-                character.to_string(),
-                position,
-            )),
+            '/' => {
+                if chars.peek() == Some(&'/') {
+                    chars.next();
+                    advance_position('/', &mut line, &mut column);
+
+                    while let Some(next_character) = chars.peek() {
+                        if *next_character == '\n' {
+                            break;
+                        }
+
+                        let consumed_character = *next_character;
+                        chars.next();
+                        advance_position(consumed_character, &mut line, &mut column);
+                    }
+
+                    None
+                } else {
+                    Some(Token::new(
+                        TokenKind::Slash,
+                        character.to_string(),
+                        position,
+                    ))
+                }
+            }
             '=' => {
                 if chars.peek() == Some(&'=') {
                     chars.next();
@@ -333,7 +352,7 @@ pub fn scan_tokens(source: &str) -> Result<Vec<Token>, LexError> {
                 }
 
                 let kind = match lexeme.as_str() {
-                    "print" => TokenKind::Print,
+                    "imprima" => TokenKind::Print,
                     _ => TokenKind::Identifier,
                 };
 
@@ -354,4 +373,84 @@ pub fn scan_tokens(source: &str) -> Result<Vec<Token>, LexError> {
     }
 
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan_tokens;
+
+    #[test]
+    fn scans_print_and_string_with_positions() {
+        let tokens = match scan_tokens("imprima \"Olá\"") {
+            Ok(tokens) => tokens,
+            Err(error) => panic!("o lexer falhou: {error}"),
+        };
+
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind_name(), "PRINT");
+        assert_eq!(tokens[0].lexeme(), "imprima");
+        assert_eq!(tokens[0].line(), 1);
+        assert_eq!(tokens[0].column(), 1);
+        assert_eq!(tokens[1].kind_name(), "STRING");
+        assert_eq!(tokens[1].lexeme(), "\"Olá\"");
+        assert_eq!(tokens[1].line(), 1);
+        assert_eq!(tokens[1].column(), 9);
+    }
+
+    #[test]
+    fn reports_unexpected_character_position() {
+        let result = scan_tokens("imprima \"ok\"\n  @");
+
+        match result {
+            Ok(_) => panic!("o lexer deveria ter falhado"),
+            Err(error) => assert_eq!(
+                error.to_string(),
+                "linha 2, coluna 3: Caractere inesperado: '@'"
+            ),
+        }
+    }
+
+    #[test]
+    fn reports_unterminated_string_start() {
+        let result = scan_tokens("imprima \"ok\"\nimprima \"aberta");
+
+        match result {
+            Ok(_) => panic!("o lexer deveria rejeitar a string"),
+            Err(error) => assert_eq!(
+                error.to_string(),
+                "linha 2, coluna 9: string sem aspas de fechamento"
+            ),
+        }
+    }
+
+    #[test]
+    fn ignores_line_comments_and_preserves_nest_line_position() {
+        let source = "// comentário\nimprima \"ok\" // depois\n/";
+        let tokens = match scan_tokens(source) {
+            Ok(tokens) => tokens,
+            Err(error) => panic!("o lexer falhou: {error}"),
+        };
+
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0].kind_name(), "PRINT");
+        assert_eq!(tokens[0].line(), 2);
+        assert_eq!(tokens[0].column(), 1);
+        assert_eq!(tokens[1].kind_name(), "STRING");
+        assert_eq!(tokens[1].column(), 9);
+        assert_eq!(tokens[2].kind_name(), "SLASH");
+        assert_eq!(tokens[2].line(), 3);
+        assert_eq!(tokens[2].column(), 1);
+    }
+
+    #[test]
+    fn accepts_comment_at_end_of_file() {
+        let tokens = match scan_tokens("imprima \"ok\" // sem quebra final") {
+            Ok(tokens) => tokens,
+            Err(error) => panic!("o lexer falhou: {error}"),
+        };
+
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind_name(), "PRINT");
+        assert_eq!(tokens[1].kind_name(), "STRING");
+    }
 }
