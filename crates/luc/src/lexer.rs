@@ -50,7 +50,7 @@ impl fmt::Display for LexError {
     }
 }
 
-enum TokenKind {
+pub enum TokenKind {
     LeftParen,
     RightParen,
     LeftBrace,
@@ -131,6 +131,14 @@ impl Token {
 
     pub fn column(&self) -> usize {
         self.position.column()
+    }
+
+    pub fn kind(&self) -> &TokenKind {
+        &self.kind
+    }
+
+    pub fn into_lexeme(self) -> String {
+        self.lexeme
     }
 }
 

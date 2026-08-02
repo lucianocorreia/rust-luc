@@ -1,10 +1,15 @@
 use std::{env, fmt, fs, io, process::ExitCode};
 
+use crate::RunError::Parse;
+
+mod ast;
 mod lexer;
+mod parser;
 
 enum RunError {
     Io(io::Error),
     Lex(lexer::LexError),
+    Parse(parser::ParseError),
 }
 
 impl fmt::Display for RunError {
@@ -12,6 +17,7 @@ impl fmt::Display for RunError {
         match self {
             RunError::Io(error) => write!(formatter, "I/O error: {}", error),
             RunError::Lex(error) => write!(formatter, "Lexical error: {}", error),
+            RunError::Parse(error) => write!(formatter, "Parse error: {}", error),
         }
     }
 }
@@ -40,15 +46,12 @@ fn main() -> ExitCode {
 fn run(source_path: &str) -> Result<(), RunError> {
     let source = fs::read_to_string(source_path).map_err(RunError::Io)?;
     let tokens = lexer::scan_tokens(&source).map_err(RunError::Lex)?;
+    let statement = parser::parse(tokens).map_err(Parse)?;
 
-    for token in tokens {
-        println!(
-            "{}:{} {} {}",
-            token.line(),
-            token.column(),
-            token.kind_name(),
-            token.lexeme()
-        );
+    match statement {
+        ast::Statement::Print(value) => {
+            println!("PRINT_STATEMENT '{value}'");
+        }
     }
 
     Ok(())
