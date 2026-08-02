@@ -1,6 +1,7 @@
 use std::{env, fmt, fs, io, process::ExitCode};
 
 mod ast;
+mod interpreter;
 mod lexer;
 mod parser;
 
@@ -45,15 +46,10 @@ fn run(source_path: &str) -> Result<(), RunError> {
     let source = fs::read_to_string(source_path).map_err(RunError::Io)?;
     let tokens = lexer::scan_tokens(&source).map_err(RunError::Lex)?;
     let program = parser::parse(tokens).map_err(RunError::Parse)?;
+    let output = interpreter::execute(program);
 
-    println!("PROGRAM");
-
-    for statement in program.into_statements() {
-        match statement {
-            ast::Statement::Print(value) => {
-                println!("  PRINT_STATEMENT '{value}'");
-            }
-        }
+    for line in output {
+        println!("{line}");
     }
 
     Ok(())
