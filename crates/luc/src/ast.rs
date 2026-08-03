@@ -1,5 +1,5 @@
 pub enum Statement {
-    Print(String),
+    Print(Expr),
 }
 
 pub struct Program {
@@ -14,4 +14,22 @@ impl Program {
     pub fn into_statements(self) -> Vec<Statement> {
         self.statements
     }
+}
+
+pub enum Value {
+    String(String),
+    Number(f64),
+}
+
+impl Value {
+    pub fn into_output(self) -> String {
+        match self {
+            Value::String(value) => value,
+            Value::Number(value) => value.to_string(),
+        }
+    }
+}
+
+pub enum Expr {
+    Literal(Value),
 }

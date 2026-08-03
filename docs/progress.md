@@ -23,6 +23,18 @@
 - [ ] Capítulo 19 — Agrupamento e `Box`.
 - [ ] Capítulo 20 — Negação e erros de runtime.
 - [ ] Capítulo 21 — Aritmética e precedência.
+- [ ] Capítulo 22 — Comparações e igualdade.
+- [ ] Capítulo 23 — Operadores lógicos e curto-circuito.
+- [ ] Capítulo 24 — Variáveis e ambiente.
+- [ ] Capítulo 25 — Condicional se e senao.
+- [ ] Capítulo 26 — Blocos e escopo léxico.
+- [ ] Capítulo 27 — Laço enquanto.
+- [ ] Capítulo 28 — Funcoes: declaracao e chamada.
+- [ ] Capítulo 29 — Parametros e argumentos.
+- [ ] Capítulo 30 — Retorno de funcoes.
+- [ ] Capítulo 31 — Nil e funcoes nativas iniciais.
+- [ ] Capítulo 32 — Biblioteca padrao inicial.
+- [ ] Capítulo 33 — Use e modulos nativos iniciais.
 
 ## Guias disponíveis
 
@@ -47,5 +59,17 @@
 - [Capítulo 19](capitulos/19-agrupamento-e-box.md)
 - [Capítulo 20](capitulos/20-negacao-e-erros-de-runtime.md)
 - [Capítulo 21](capitulos/21-aritmetica-e-precedencia.md)
+- [Capítulo 22](capitulos/22-comparacoes-e-igualdade.md)
+- [Capítulo 23](capitulos/23-operadores-logicos-e-curto-circuito.md)
+- [Capítulo 24](capitulos/24-variaveis-e-ambiente.md)
+- [Capítulo 25](capitulos/25-condicional-se-senao.md)
+- [Capítulo 26](capitulos/26-blocos-e-escopo-lexico.md)
+- [Capítulo 27](capitulos/27-laco-enquanto.md)
+- [Capítulo 28](capitulos/28-funcoes-declaracao-e-chamada.md)
+- [Capítulo 29](capitulos/29-parametros-e-argumentos.md)
+- [Capítulo 30](capitulos/30-retorno-de-funcoes.md)
+- [Capítulo 31](capitulos/31-nil-e-funcoes-nativas-iniciais.md)
+- [Capítulo 32](capitulos/32-biblioteca-padrao-inicial.md)
+- [Capítulo 33](capitulos/33-use-e-modulos-nativos-iniciais.md)
 
 Marque um capítulo como implementado somente depois de concluir os exercícios, restaurar alterações experimentais e validar o workspace.

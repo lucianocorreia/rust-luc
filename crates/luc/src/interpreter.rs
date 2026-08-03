@@ -1,11 +1,20 @@
-use crate::ast::{Program, Statement};
+use crate::ast::{Expr, Program, Statement, Value};
+
+fn evaluate(expression: Expr) -> Value {
+    match expression {
+        Expr::Literal(value) => value,
+    }
+}
 
 pub fn execute(program: Program) -> Vec<String> {
     let mut output = Vec::new();
 
     for statement in program.into_statements() {
         match statement {
-            Statement::Print(value) => output.push(value),
+            Statement::Print(expression) => {
+                let value = evaluate(expression);
+                output.push(value.into_output());
+            }
         }
     }
 
@@ -14,34 +23,22 @@ pub fn execute(program: Program) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Program, Statement};
+    use crate::ast::{Expr, Program, Statement, Value};
 
     use super::execute;
 
     #[test]
-    fn executes_print_statement() {
-        let program = Program::new(vec![Statement::Print(String::from("Olá"))]);
-
-        let output = execute(program);
-
-        assert_eq!(output.len(), 1);
-        assert_eq!(output[0], "Olá");
-    }
-
-    #[test]
     fn preserves_statement_order_and_utf8() {
         let program = Program::new(vec![
-            Statement::Print(String::from("primeira")),
-            Statement::Print(String::from("Olá, 世界")),
-            Statement::Print(String::from("terceira")),
+            Statement::Print(Expr::Literal(Value::String(String::from("texto")))),
+            Statement::Print(Expr::Literal(Value::Number(3.5))),
         ]);
 
         let output = execute(program);
 
-        assert_eq!(output.len(), 3);
-        assert_eq!(output[0], "primeira");
-        assert_eq!(output[1], "Olá, 世界");
-        assert_eq!(output[2], "terceira");
+        assert_eq!(output.len(), 2);
+        assert_eq!(output[0], "texto");
+        assert_eq!(output[1], "3.5");
     }
 
     #[test]

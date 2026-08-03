@@ -1,15 +1,26 @@
 use std::fmt;
 
 use crate::{
-    ast::{Program, Statement},
+    ast::{Expr, Program, Statement, Value},
     lexer::{Token, TokenKind},
 };
 
 pub enum ParseError {
     ExpectedPrint(Token),
-    MissingString { line: usize, column: usize },
-    ExpectedString(Token),
-    MissingSemicolon { line: usize, column: usize },
+    MissingExpression {
+        line: usize,
+        column: usize,
+    },
+    ExpectedExpression(Token),
+    InvalidNumber {
+        lexeme: String,
+        line: usize,
+        column: usize,
+    },
+    MissingSemicolon {
+        line: usize,
+        column: usize,
+    },
     ExpectedSemicolon(Token),
 }
 
@@ -29,20 +40,30 @@ impl fmt::Display for ParseError {
                     token.lexeme()
                 )
             }
-            ParseError::MissingString { line, column } => {
+            ParseError::MissingExpression { line, column } => {
                 write!(
                     formatter,
-                    "linha {line}, coluna {column}: esperado STRING depois de 'imprima'"
+                    "linha {line}, coluna {column}: esperada expressão depois de 'imprima'"
                 )
             }
-            ParseError::ExpectedString(token) => {
+            ParseError::ExpectedExpression(token) => {
                 write!(
                     formatter,
-                    "linha {}, coluna {}: esperado STRING, encontrado {} '{}'",
+                    "linha {}, coluna {}: esperado expressão, encontrado {} '{}'",
                     token.line(),
                     token.column(),
                     token.kind_name(),
                     token.lexeme()
+                )
+            }
+            ParseError::InvalidNumber {
+                lexeme,
+                line,
+                column,
+            } => {
+                write!(
+                    formatter,
+                    "linha {line}, coluna {column}: número inválido '{lexeme}'"
                 )
             }
             ParseError::MissingSemicolon { line, column } => {
@@ -87,30 +108,50 @@ pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
         let print_line = print_token.line();
         let print_column = print_token.column();
 
-        let string_token = match tokens.next() {
+        let expression_token = match tokens.next() {
             Some(token) => token,
             None => {
-                return Err(ParseError::MissingString {
+                return Err(ParseError::MissingExpression {
                     line: print_line,
                     column: print_column,
                 });
             }
         };
 
-        match string_token.kind() {
-            TokenKind::String => {}
-            _ => return Err(ParseError::ExpectedString(string_token)),
-        }
+        let expression_line = expression_token.line();
+        let expression_column = expression_token.column();
 
-        let string_line = string_token.line();
-        let string_column = string_token.column();
+        let expression = match expression_token.kind() {
+            TokenKind::String => {
+                let mut value = expression_token.into_lexeme();
+                value.remove(0);
+                let _closing_quote = value.pop();
+                Expr::Literal(Value::String(value))
+            }
+            TokenKind::Number => {
+                let lexeme = expression_token.into_lexeme();
+                let number = match lexeme.parse::<f64>() {
+                    Ok(number) => number,
+                    Err(_) => {
+                        return Err(ParseError::InvalidNumber {
+                            lexeme,
+                            line: expression_line,
+                            column: expression_column,
+                        });
+                    }
+                };
+
+                Expr::Literal(Value::Number(number))
+            }
+            _ => return Err(ParseError::ExpectedExpression(expression_token)),
+        };
 
         let semicolon_token = match tokens.next() {
             Some(token) => token,
             None => {
                 return Err(ParseError::MissingSemicolon {
-                    line: string_line,
-                    column: string_column,
+                    line: expression_line,
+                    column: expression_column,
                 });
             }
         };
@@ -120,11 +161,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
             _ => return Err(ParseError::ExpectedSemicolon(semicolon_token)),
         }
 
-        let mut value = string_token.into_lexeme();
-        value.remove(0);
-        let _closing_quote = value.pop();
-
-        statements.push(Statement::Print(value));
+        statements.push(Statement::Print(expression));
     }
 
     Ok(Program::new(statements))
@@ -132,40 +169,19 @@ pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Program, Statement};
+    use crate::ast::{Expr, Program, Statement, Value};
+    use crate::lexer::scan_tokens;
 
     use super::parse;
 
     fn parse_source(source: &str) -> Result<Program, String> {
-        let tokens = match crate::lexer::scan_tokens(source) {
-            Ok(tokens) => tokens,
-            Err(error) => return Err(error.to_string()),
-        };
-
-        match parse(tokens) {
-            Ok(program) => Ok(program),
-            Err(error) => Err(error.to_string()),
-        }
+        let tokens = scan_tokens(source).map_err(|error| error.to_string())?;
+        parse(tokens).map_err(|error| error.to_string())
     }
 
     #[test]
-    fn parses_print_statement() {
-        let program = match parse_source("imprima \"Olá\";") {
-            Ok(program) => program,
-            Err(error) => panic!("o parser falhou: {error}"),
-        };
-
-        let statements = program.into_statements();
-        assert_eq!(statements.len(), 1);
-
-        match &statements[0] {
-            Statement::Print(value) => assert_eq!(value, "Olá"),
-        }
-    }
-
-    #[test]
-    fn parses_multiple_statements_in_order() {
-        let program = match parse_source("imprima \"a\"; imprima \"b\";") {
+    fn parses_literal_expressions() {
+        let program = match parse_source("imprima \"Olá\"; imprima 42;") {
             Ok(program) => program,
             Err(error) => panic!("o parser falhou: {error}"),
         };
@@ -174,11 +190,17 @@ mod tests {
         assert_eq!(statements.len(), 2);
 
         match &statements[0] {
-            Statement::Print(value) => assert_eq!(value, "a"),
+            Statement::Print(Expr::Literal(Value::String(value))) => {
+                assert_eq!(value, "Olá");
+            }
+            _ => panic!("esperada string literal"),
         }
 
         match &statements[1] {
-            Statement::Print(value) => assert_eq!(value, "b"),
+            Statement::Print(Expr::Literal(Value::Number(value))) => {
+                assert_eq!(*value, 42.0);
+            }
+            _ => panic!("esperado número literal"),
         }
     }
 }
