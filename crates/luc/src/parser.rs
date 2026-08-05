@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, iter::Peekable, vec::IntoIter};
 
 use crate::{
     ast::{Expr, Program, Statement, Value},
@@ -7,17 +7,9 @@ use crate::{
 
 pub enum ParseError {
     ExpectedPrint(Token),
-    MissingExpression {
-        line: usize,
-        column: usize,
-    },
     ExpectedExpression(Token),
     InvalidNumber {
         lexeme: String,
-        line: usize,
-        column: usize,
-    },
-    MissingSemicolon {
         line: usize,
         column: usize,
     },
@@ -40,16 +32,10 @@ impl fmt::Display for ParseError {
                     token.lexeme()
                 )
             }
-            ParseError::MissingExpression { line, column } => {
-                write!(
-                    formatter,
-                    "linha {line}, coluna {column}: esperada expressão depois de 'imprima'"
-                )
-            }
             ParseError::ExpectedExpression(token) => {
                 write!(
                     formatter,
-                    "linha {}, coluna {}: esperado expressão, encontrado {} '{}'",
+                    "linha {}, coluna {}: esperada expressão, encontrado {} '{}'",
                     token.line(),
                     token.column(),
                     token.kind_name(),
@@ -64,12 +50,6 @@ impl fmt::Display for ParseError {
                 write!(
                     formatter,
                     "linha {line}, coluna {column}: número inválido '{lexeme}'"
-                )
-            }
-            ParseError::MissingSemicolon { line, column } => {
-                write!(
-                    formatter,
-                    "linha {line}, coluna {column}: esperado ';' depois da string"
                 )
             }
             ParseError::ExpectedSemicolon(token) => {
@@ -95,76 +75,97 @@ impl fmt::Display for ParseError {
     }
 }
 
-pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
-    let mut tokens = tokens.into_iter();
-    let mut statements = Vec::new();
+struct Parse {
+    tokens: Peekable<IntoIter<Token>>,
+}
 
-    while let Some(print_token) = tokens.next() {
+impl Parse {
+    fn new(tokens: Vec<Token>) -> Self {
+        Self {
+            tokens: tokens.into_iter().peekable(),
+        }
+    }
+
+    fn is_at_end(&mut self) -> bool {
+        match self.tokens.peek() {
+            Some(token) => match token.kind() {
+                TokenKind::Eof => true,
+                _ => false,
+            },
+            None => true,
+        }
+    }
+
+    fn advance(&mut self) -> Token {
+        match self.tokens.next() {
+            Some(token) => token,
+            None => panic!("o lexer deve produzir EOF"),
+        }
+    }
+
+    fn parse_program(&mut self) -> Result<Program, ParseError> {
+        let mut statements = Vec::new();
+
+        while !self.is_at_end() {
+            statements.push(self.parse_statement()?);
+        }
+
+        Ok(Program::new(statements))
+    }
+
+    fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+        let print_token = self.advance();
+
         match print_token.kind() {
             TokenKind::Print => {}
             _ => return Err(ParseError::ExpectedPrint(print_token)),
         }
 
-        let print_line = print_token.line();
-        let print_column = print_token.column();
-
-        let expression_token = match tokens.next() {
-            Some(token) => token,
-            None => {
-                return Err(ParseError::MissingExpression {
-                    line: print_line,
-                    column: print_column,
-                });
-            }
-        };
-
-        let expression_line = expression_token.line();
-        let expression_column = expression_token.column();
-
-        let expression = match expression_token.kind() {
-            TokenKind::String => {
-                let mut value = expression_token.into_lexeme();
-                value.remove(0);
-                let _closing_quote = value.pop();
-                Expr::Literal(Value::String(value))
-            }
-            TokenKind::Number => {
-                let lexeme = expression_token.into_lexeme();
-                let number = match lexeme.parse::<f64>() {
-                    Ok(number) => number,
-                    Err(_) => {
-                        return Err(ParseError::InvalidNumber {
-                            lexeme,
-                            line: expression_line,
-                            column: expression_column,
-                        });
-                    }
-                };
-
-                Expr::Literal(Value::Number(number))
-            }
-            _ => return Err(ParseError::ExpectedExpression(expression_token)),
-        };
-
-        let semicolon_token = match tokens.next() {
-            Some(token) => token,
-            None => {
-                return Err(ParseError::MissingSemicolon {
-                    line: expression_line,
-                    column: expression_column,
-                });
-            }
-        };
+        let expression = self.parse_expression()?;
+        let semicolon_token = self.advance();
 
         match semicolon_token.kind() {
             TokenKind::Semicolon => {}
             _ => return Err(ParseError::ExpectedSemicolon(semicolon_token)),
         }
 
-        statements.push(Statement::Print(expression));
+        Ok(Statement::Print(expression))
     }
 
-    Ok(Program::new(statements))
+    fn parse_expression(&mut self) -> Result<Expr, ParseError> {
+        let token = self.advance();
+        let line = token.line();
+        let column = token.column();
+
+        match token.kind() {
+            TokenKind::String => {
+                let mut value = token.into_lexeme();
+                value.remove(0);
+                let _closing_quote = value.pop();
+                Ok(Expr::Literal(Value::String(value)))
+            }
+            TokenKind::Number => {
+                let lexeme = token.into_lexeme();
+                let number = match lexeme.parse::<f64>() {
+                    Ok(number) => number,
+                    Err(_) => {
+                        return Err(ParseError::InvalidNumber {
+                            lexeme,
+                            line,
+                            column,
+                        });
+                    }
+                };
+                Ok(Expr::Literal(Value::Number(number)))
+            }
+            _ => Err(ParseError::ExpectedExpression(token)),
+        }
+    }
+}
+
+pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
+    let mut parser = Parse::new(tokens);
+    parser.parse_program()
 }
 
 #[cfg(test)]
@@ -201,6 +202,29 @@ mod tests {
                 assert_eq!(*value, 42.0);
             }
             _ => panic!("esperado número literal"),
+        }
+    }
+
+    #[test]
+    fn rejects_missing_semicolon_at_eof() {
+        let result = parse_source("imprima \"sem terminador\"");
+
+        match result {
+            Ok(_) => panic!("o parser deveria exigir ponto e vírgula"),
+            Err(error) => assert_eq!(error, "linha 1, coluna 25: esperado ';', encontrado EOF ''"),
+        }
+    }
+
+    #[test]
+    fn rejects_missing_expression_at_eof() {
+        let result = parse_source("imprima");
+
+        match result {
+            Ok(_) => panic!("o parser deveria exigir expressão"),
+            Err(error) => assert_eq!(
+                error,
+                "linha 1, coluna 8: esperada expressão, encontrado EOF ''"
+            ),
         }
     }
 }

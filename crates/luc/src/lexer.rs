@@ -74,6 +74,7 @@ pub enum TokenKind {
     String,
     Identifier,
     Print,
+    Eof,
     // Unknown,
 }
 
@@ -117,6 +118,7 @@ impl Token {
             TokenKind::String => "STRING",
             TokenKind::Identifier => "IDENTIFIER",
             TokenKind::Print => "PRINT",
+            TokenKind::Eof => "EOF",
             // TokenKind::Unknown => "Unknown",
         }
     }
@@ -380,6 +382,12 @@ pub fn scan_tokens(source: &str) -> Result<Vec<Token>, LexError> {
         }
     }
 
+    tokens.push(Token::new(
+        TokenKind::Eof,
+        String::new(),
+        Position::new(line, column),
+    ));
+
     Ok(tokens)
 }
 
@@ -394,7 +402,7 @@ mod tests {
             Err(error) => panic!("o lexer falhou: {error}"),
         };
 
-        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].kind_name(), "PRINT");
         assert_eq!(tokens[0].lexeme(), "imprima");
         assert_eq!(tokens[0].line(), 1);
@@ -403,6 +411,7 @@ mod tests {
         assert_eq!(tokens[1].lexeme(), "\"Olá\"");
         assert_eq!(tokens[1].line(), 1);
         assert_eq!(tokens[1].column(), 9);
+        assert_eq!(tokens[2].kind_name(), "EOF");
     }
 
     #[test]
@@ -439,7 +448,7 @@ mod tests {
             Err(error) => panic!("o lexer falhou: {error}"),
         };
 
-        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].kind_name(), "PRINT");
         assert_eq!(tokens[0].line(), 2);
         assert_eq!(tokens[0].column(), 1);
@@ -448,6 +457,7 @@ mod tests {
         assert_eq!(tokens[2].kind_name(), "SLASH");
         assert_eq!(tokens[2].line(), 3);
         assert_eq!(tokens[2].column(), 1);
+        assert_eq!(tokens[3].kind_name(), "EOF");
     }
 
     #[test]
@@ -457,8 +467,23 @@ mod tests {
             Err(error) => panic!("o lexer falhou: {error}"),
         };
 
-        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].kind_name(), "PRINT");
         assert_eq!(tokens[1].kind_name(), "STRING");
+        assert_eq!(tokens[2].kind_name(), "EOF");
+    }
+
+    #[test]
+    fn places_eof_after_last_character() {
+        let tokens = match scan_tokens("imprima \"ok\";\n") {
+            Ok(tokens) => tokens,
+            Err(error) => panic!("o lexer falhou: {error}"),
+        };
+
+        let eof = &tokens[tokens.len() - 1];
+        assert_eq!(eof.kind_name(), "EOF");
+        assert_eq!(eof.lexeme(), "");
+        assert_eq!(eof.line(), 2);
+        assert_eq!(eof.column(), 1);
     }
 }
