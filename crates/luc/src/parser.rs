@@ -14,6 +14,7 @@ pub enum ParseError {
         column: usize,
     },
     ExpectedSemicolon(Token),
+    ExpectedRightParen(Token),
 }
 
 impl fmt::Display for ParseError {
@@ -56,6 +57,16 @@ impl fmt::Display for ParseError {
                 write!(
                     formatter,
                     "linha {}, coluna {}: esperado ';', encontrado {} '{}'",
+                    token.line(),
+                    token.column(),
+                    token.kind_name(),
+                    token.lexeme()
+                )
+            }
+            ParseError::ExpectedRightParen(token) => {
+                write!(
+                    formatter,
+                    "linha {}, coluna {}: esperado ')', encontrado {} '{}'",
                     token.line(),
                     token.column(),
                     token.kind_name(),
@@ -133,6 +144,10 @@ impl Parse {
     }
 
     fn parse_expression(&mut self) -> Result<Expr, ParseError> {
+        self.parse_primary()
+    }
+
+    fn parse_primary(&mut self) -> Result<Expr, ParseError> {
         let token = self.advance();
         let line = token.line();
         let column = token.column();
@@ -157,6 +172,17 @@ impl Parse {
                     }
                 };
                 Ok(Expr::Literal(Value::Number(number)))
+            }
+            TokenKind::LeftParen => {
+                let expression = self.parse_expression()?;
+                let right_paren = self.advance();
+
+                match right_paren.kind() {
+                    TokenKind::RightParen => {}
+                    _ => return Err(ParseError::ExpectedRightParen(right_paren)),
+                }
+
+                Ok(Expr::Grouping(Box::new(expression)))
             }
             _ => Err(ParseError::ExpectedExpression(token)),
         }
@@ -224,6 +250,44 @@ mod tests {
             Err(error) => assert_eq!(
                 error,
                 "linha 1, coluna 8: esperada expressão, encontrado EOF ''"
+            ),
+        }
+    }
+
+    #[test]
+    fn parse_nested_grouping() {
+        let program = match parse_source("imprima (((42)));") {
+            Ok(program) => program,
+            Err(error) => panic!("o parser falhou: {error}"),
+        };
+
+        let statements = program.into_statements();
+        assert_eq!(statements.len(), 1);
+
+        match &statements[0] {
+            Statement::Print(Expr::Grouping(first)) => match first.as_ref() {
+                Expr::Grouping(second) => match second.as_ref() {
+                    Expr::Grouping(third) => match third.as_ref() {
+                        Expr::Literal(Value::Number(value)) => assert_eq!(*value, 42.0),
+                        _ => panic!("esperado número no terceiro grupo"),
+                    },
+                    _ => panic!("esperado terceiro grupo"),
+                },
+                _ => panic!("esperado segundo grupo"),
+            },
+            _ => panic!("esperado primeiro grupo"),
+        }
+    }
+
+    #[test]
+    fn rejects_unclosed_grouping() {
+        let result = parse_source("imprima (42;");
+
+        match result {
+            Ok(_) => panic!("o parser deveria exigir fechamento"),
+            Err(error) => assert_eq!(
+                error,
+                "linha 1, coluna 12: esperado ')', encontrado SEMICOLON ';'"
             ),
         }
     }

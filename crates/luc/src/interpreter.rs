@@ -3,6 +3,7 @@ use crate::ast::{Expr, Program, Statement, Value};
 fn evaluate(expression: Expr) -> Value {
     match expression {
         Expr::Literal(value) => value,
+        Expr::Grouping(expression) => evaluate(*expression),
     }
 }
 
@@ -48,5 +49,18 @@ mod tests {
         let output = execute(program);
 
         assert_eq!(output.len(), 0);
+    }
+
+    #[test]
+    fn evaluates_nested_grouping() {
+        let expression = Expr::Grouping(Box::new(Expr::Grouping(Box::new(Expr::Literal(
+            Value::String(String::from("agrupado")),
+        )))));
+        let program = Program::new(vec![Statement::Print(expression)]);
+
+        let output = execute(program);
+
+        assert_eq!(output.len(), 1);
+        assert_eq!(output[0], "agrupado");
     }
 }

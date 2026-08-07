@@ -1,0 +1,3 @@
+imprima (42);
+imprima (("texto"));
+imprima (((3.14)));

@@ -32,4 +32,5 @@ impl Value {
 
 pub enum Expr {
     Literal(Value),
+    Grouping(Box<Expr>),
 }
